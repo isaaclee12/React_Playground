@@ -4,6 +4,16 @@ import React from 'react';
 // import Game from './tic_tac_toe';
 import ReactDOM from 'react-dom/client';
 
+/*
+* NOTES:
+* props = parameter sent into the child component
+* state = something private and inherent to the currect/parrent component
+* most functions should be handled/floated up to the parent-most component
+* list items need unique keys for react to work with it
+* if items are ordered, then you can use the index
+* if not, each unordered item needs a unique key
+* */
+
 // Function component that sends in a value on click.
 // Basically just an encapsulated function for changing square/child values
 function Square(props) {
@@ -15,60 +25,19 @@ function Square(props) {
 }
 
 class Board extends React.Component {
-    // Constructor for vars, creates array w/ values of ea. square + bool
-    constructor(props) {
-        super(props);
-        this.state = {
-            squares: Array(9).fill(),
-            xIsNext: true,
-        };
-    }
-
-
-    // Handle clicks to change value of squares
-    // & switch turn
-    handleClick(i) {
-        // Make a variable that's a copy of squares
-        const squares = this.state.squares.slice();
-
-        // Ignore click if someone has won or
-        // if the square is filled/has a non-null value
-        if (calculateWinner(squares) || squares[i]) {
-            return;
-        }
-
-        // Set symbol to mark square w/ based on if x is next or not
-        squares[i] = this.state.xIsNext ? 'X' : 'O';
-
-        this.setState({
-            squares: squares,
-            // Flip xIsNext to alternate state
-            xIsNext: !this.state.xIsNext,
-        });
-    }
 
     // Container for squares and their states
     renderSquare(i) {
         return <Square
-            value = {this.state.squares[i]}
-            onClick={() => this.handleClick(i)}
+            value = {this.props.squares[i]}
+            onClick={() => this.props.onClick(i)}
         />;
     }
 
     render() {
-        // Calculate the games winner
-        const winner = calculateWinner(this.state.squares);
-        let status;
-        if (winner) {
-            status = 'Winner: ' + winner;
-        } else {
-            status = 'Next player: ' + (this.state.xIsNext ? 'X': 'O');
-        }
-
         // Generate the board of 9 buttons
         return (
             <div>
-                <div className="status">{status}</div>
                 <div className="board-row">
                     {this.renderSquare(0)}
                     {this.renderSquare(1)}
@@ -103,15 +72,87 @@ class Game extends React.Component {
         };
     }
 
+    // Handles clicks to change value of squares + switches turn
+    // and stores history, we use concat b/c it doesn't mutate the OG
+    handleClick(i) {
+        // Get history
+        const history = this.state.history;
+
+        // Use latest history
+        const current = history[history.length - 1];
+
+        // Make a variable that's a copy of squares
+        const squares = current.squares.slice();
+
+        // Ignore click if someone has won or
+        // if the square is filled/has a non-null value
+        if (calculateWinner(squares) || squares[i]) {
+            return;
+        }
+
+        // Set symbol to mark square w/ based on if x is next or not
+        squares[i] = this.state.xIsNext ? 'X' : 'O';
+
+        this.setState({
+            // Add each array of squares to the main history array on click
+            history: history.concat([{
+                squares: squares,
+            }]),
+            // Flip xIsNext to alternate state
+            xIsNext: !this.state.xIsNext,
+        });
+    }
+
     render() {
+        // Get history
+        const history = this.state.history;
+
+        // Use latest history
+        const current = history[history.length - 1];
+
+        // Calculate the games winner
+        const winner = calculateWinner(current.squares);
+
+        // Map history to moves
+        const moves = history.map((step, move) => {
+
+            // Label of button depends on move number
+            const desc = move ?
+                'Go to move #' + move :
+                'Go to game start';
+
+            // Send html printing the buttons
+            return (
+                // element w/ key for react to work w/ it
+                <li key={move}>
+                    <button onClick={() => this.jumpTo(move)}>{desc}</button>
+                </li>
+            )
+        });
+
+
+
+        let status;
+        if (winner) {
+            status = 'Winner: ' + winner;
+        } else {
+            status = 'Next player: ' + (this.state.xIsNext ? 'X': 'O');
+        }
+
         return (
             <div className="game">
                 <div className="game-board">
-                    <Board />
+                    {/*creates the board*/}
+                    <Board
+                        squares={current.squares}
+                        onClick={(i) => this.handleClick(i)}
+                    />
                 </div>
                 <div className="game-info">
-                    <div>{/* status */}</div>
-                    <ol>{/* TODO */}</ol>
+                    {/*prints status of game*/}
+                    <div>{status}</div>
+                    {/*prints all the moves in the map*/}
+                    <ol>{moves}</ol>
                 </div>
             </div>
         );
