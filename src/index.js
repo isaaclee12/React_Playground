@@ -2,6 +2,7 @@ import React from 'react';
 // import Square from './tic_tac_toe';
 // import Board from './tic_tac_toe';
 // import Game from './tic_tac_toe';
+import './main.css';
 import ReactDOM from 'react-dom/client';
 
 /*
@@ -61,6 +62,7 @@ class Board extends React.Component {
 class Game extends React.Component {
     // Establish everything.
     // History = array of array of square-states
+    // stepNumber = counts which step we're on
     // xIsNext = bool for turn tracking
     constructor(props) {
         super(props);
@@ -68,6 +70,7 @@ class Game extends React.Component {
             history: [{
                 squares: Array(9).fill(null),
             }],
+            stepNumber: 0,
             xIsNext: true,
         };
     }
@@ -75,8 +78,8 @@ class Game extends React.Component {
     // Handles clicks to change value of squares + switches turn
     // and stores history, we use concat b/c it doesn't mutate the OG
     handleClick(i) {
-        // Get history
-        const history = this.state.history;
+        // Sets our place in history to a previous spot, allows us to change future
+        const history = this.state.history.slice(0, this.state.stepNumber + 1);
 
         // Use latest history
         const current = history[history.length - 1];
@@ -98,17 +101,31 @@ class Game extends React.Component {
             history: history.concat([{
                 squares: squares,
             }]),
+            // Set step to our current history. if history changes, we change history's length
+            stepNumber: history.length,
+
             // Flip xIsNext to alternate state
             xIsNext: !this.state.xIsNext,
         });
     }
 
+    // Jumps to a step if displaying old move
+    jumpTo(step) {
+        this.setState({
+            // This only updates these two state vars, leaves history alone
+           stepNumber: step,
+            // set x to next if step is even, else o
+           xIsNext: (step % 2) === 0,
+        });
+    }
+
+    // Renders the game
     render() {
         // Get history
         const history = this.state.history;
 
         // Use latest history
-        const current = history[history.length - 1];
+        const current = history[this.state.stepNumber];
 
         // Calculate the games winner
         const winner = calculateWinner(current.squares);
